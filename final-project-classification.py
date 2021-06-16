@@ -7,10 +7,10 @@ Created on Tue Jun  1 19:19:07 2021
 
 import pandas as pd
 import numpy as np
-from sklearn import metrics
+import seaborn as sns
 import scipy
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, KFold, cross_val_score
+from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import confusion_matrix  
@@ -108,10 +108,29 @@ def classificationAlgorithms(cls_name, cls_model, X_train, X_test, y_train, y_te
     model = cls_model
     model.fit(X_train, y_train)
     
-    y_pred = model.predict(X_test)
+    results = []
+    names= []
     
+    names.append(cls_name)
+     
+    # kfold
+    score = cross_val_score(cls_model, X, y, cv=10)
+    
+    # kfold array
+    results.append(score)
+    
+    y_pred = model.predict(X_test)
+
+
     print(cls_name, 'accuracy score', accuracy_score(y_true = y_train, y_pred = model.predict(X_train)))
+    print('Confusion Matrix:')
     print(confusion_matrix(y_test, y_pred), '\n')
+    print(score)
+    print(score.mean())
+    
+    ax = sns.boxplot(data = results)
+    ax.set_xticklabels(names)
+    plt.show()
     
 classificationAlgorithms('Decision Tree Algorithm', classifier_dt, X_train, X_test, y_train, y_test)
 classificationAlgorithms('KNN Algorithm', classifier_knn, X_train, X_test, y_train, y_test)
@@ -122,161 +141,7 @@ classificationAlgorithms('AdaBoost Algorithm', classifier_ab, X_train, X_test, y
 classificationAlgorithms('SVC Algorithm', classifier_sv, X_train, X_test, y_train, y_test)
 classificationAlgorithms('MLP Algorithm', classifier_mlp, X_train, X_test, y_train, y_test)
 # *************************************************************************************
-
-cross_cor_list=list()
-cross_cor_and_colname=dict()
-
-# cross correlation calculation function
-print("\nAbsoulute Cross-Correlation: \n")
-def calculateAbsCrossCor(xname,i):
-    x = np.array(preprocessing_data[xname])
-    y = np.array(preprocessing_data["target"])
-    r=np.abs(np.corrcoef(x,y))
-    cross_cor_list.append(r)
-    cross_cor_and_colname[xname] = cross_cor_list[0][1]
-    print(xname, "\n", r,"\n")
-
-calculateAbsCrossCor("signal_id",1) #column 1
-calculateAbsCrossCor("id_measurement",1) #column 2
-calculateAbsCrossCor("phase",2)#column 3
-
-
-def scoreResults(model, X_train, X_test, y_train, y_test):
-
-    y_train_predict = model.predict(X_train)
-    y_test_predict = model.predict(X_test)
-
-    r2_train = metrics.r2_score(y_train, y_train_predict)
-    r2_test = metrics.r2_score(y_test, y_test_predict)
-
-    mse_train = metrics.mean_squared_error(y_train, y_train_predict)
-    mse_test = metrics.mean_squared_error(y_test, y_test_predict)
-
-    return [r2_train, r2_test, mse_train, mse_test, y_train_predict, y_test_predict]
-
-# Makes 10-fold process
-def classifierAlgrithm(class_model, X_train, X_test, y_train, y_test, class_name):
-    model = class_model
-    k = 10
-    iter=1
-    cv = KFold(n_splits=k, random_state = 0, shuffle=True)
-    #print(class_name, "Scores")
-    for train_index, test_index in cv.split(X):
-        X_train, X_test, y_train, y_test = X[train_index], X[test_index], y[train_index], y[test_index]
-        model.fit(X_train, y_train)
-        result = scoreResults(model = model
-                         ,X_train = X_train
-                         ,X_test = X_test
-                         ,y_train = y_train
-                         ,y_test = y_test)
-        
-    '''print(f"{iter}. veri kesiti")
-    print(f"Train R2 Score: {result[0]:.4f} MSE: {result[2]:.4f}")
-    print(f"Test R2 Score: {result[1]:9.4f} MSE: {result[3]:.4f}\n")
-    iter += 1'''
-        
-    #Residual Plot
-    #plt.scatter(y_train, result[4], color = 'red', label = "Train")
-    plt.scatter(y_test, result[5], color = "green", label = "Test")
-    plt.hlines(y=0, xmin=-100, xmax=100, color= 'blue')
-    plt.title(class_name)
-    plt.ylabel('Residual')
-    plt.xlabel('Predict Values')
-    plt.legend()
-    plt.show()
-        
-    # Curve plot
-    #plt.scatter(y_train, result[4], label = "Train", color = "red")
-    plt.scatter(y_test, result[5], label = "Test", color = "green")
-    plt.plot(range(200), range(200))
-    plt.title(class_name)
-    plt.ylabel('Target')
-    plt.xlabel('Predict Values')
-    plt.legend()
-    plt.show()
-        
-    print("------------------------------------------------------------------------")
-classifierAlgrithm(classifier_dt, X_train, X_test, y_train, y_test, 'Decision Tree Algorithm')
-classifierAlgrithm(classifier_knn, X_train, X_test, y_train, y_test, 'KNN Algorithm')
-'''classifierAlgrithm(classifier_lr, X_train, X_test, y_train, y_test, 'Logistic Regression Algorithm')
-classifierAlgrithm(classifier_nb, X_train, X_test, y_train, y_test, 'Naive Bayes Algorithm')
-classifierAlgrithm(classifier_rf, X_train, X_test, y_train, y_test, 'Random Forest Algorithm')
-classifierAlgrithm(classifier_ab, X_train, X_test, y_train, y_test, 'Ada Boost Algorithm')
-classifierAlgrithm(classifier_sv, X_train, X_test, y_train, y_test, 'SVC Algorithm')
-classifierAlgrithm(classifier_mlp, X_train, X_test, y_train, y_test, 'Multi-Layer Perceptron (MLP/ANN) Algorithm')'''
-    
-# draw histograms
-models = []
-models.append(('Decision Tree', classifier_dt))
-models.append(('KNN', classifier_knn))
-models.append(('Logistic', classifier_lr))
-models.append(('Naive Bayes', classifier_nb))
-models.append(('Random Forest', classifier_rf))
-models.append(('Ada Boost', classifier_ab))
-'''models.append(('SVC', classifier_sv))
-models.append(('Multi-Layer',classifier_mlp))'''
-
-valuesMSE = []
-valuesR2 =[]
-names=[]
-
-for name, model in models:
-    kfold = KFold(n_splits=10, shuffle=True, random_state=0)
-    
-    resultsMSE = cross_val_score(model, X_train, y_train, cv=kfold, scoring='neg_mean_squared_error')
-    resultsR2 = cross_val_score(model, X_train, y_train, cv=kfold, scoring='r2')
-    
-    valuesMSE.append(resultsMSE)
-    valuesR2.append(resultsR2)
-    names.append(name)
-    mse = "MSE - %s: %f" % (name, abs(resultsMSE.mean()))
-    r2  = "R2 - %s: %f" % (name, abs(resultsR2.mean()))
-    print(mse)
-    print(r2)
-
-print("\n-------------------------------------------------------------------")
-puan=[]
-for i in range(len(names)):
-    puan.append(abs(valuesMSE[i].mean()))
-print("\nBest learning algorithm (Accuracy):")
-print(names[puan.index(min(puan))], "->", min(puan))
-
-#Plotting histogram of R2
-r2_hist = plt.hist(valuesR2)
-plt.title('Histogram of R2 results')
-plt.show()
-
-#Plotting histogram of MSE
-mse_hist = plt.hist(valuesMSE)
-plt.title('Histogram of MSE results')
-plt.show()
-
-# residual and curve plot
-fig = plt.figure()
-fig.suptitle("Algorithm Comparision")
-
-nax=len(models)
-i=1
-for name, model in models:
-    model.fit(X_train, y_train)
-    y_test_pred = model.predict(X_test)
-    
-    curveaxis=np.zeros((100, X_test.shape[1]))
-    for cx in range(X_test.shape[1]):
-        curveaxis[:,cx]=np.linspace(np.min(X_test[:,cx]),np.max(X_test[:,cx]),100)  
-    curve_predictions = model.predict(curveaxis) 
-
-    plt.subplot(5,3,i)
-    plt.title(name)
-    plt.scatter(X_test[:,0], y_test,c='b')
-    plt.scatter(X_test[:,0], y_test_pred,c='r',alpha=0.5)
-    plt.plot(curveaxis[:,0], curve_predictions,c='y')
-    plt.grid()
-    
-    i=i+1 # subplot indeksi
-
-#******************************************************************************
-                         #MADDE-5
+ #MADDE-5
 #https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
 # https://scikit-learn.org/stable/auto_examples/model_selection/plot_grid_search_digits.html
 #
@@ -316,5 +181,4 @@ for score in scores:
     y_true, y_pred = y_test, clf.predict(X_test)
     print(classification_report(y_true, y_pred))
     print()
-
 
