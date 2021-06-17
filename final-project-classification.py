@@ -24,24 +24,24 @@ from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 
 
-# ********************* Read Data *****************************************************
+# ********************* Read Data **************************************************************
 df = pd.read_excel('C:/Users/Acer/Desktop/metadata_train.xlsx', header = None)
 df.drop([0], axis = 0, inplace = True)
 
 X = df.iloc[:,:-1].values
 y = df[3].values.astype('int')
-# *************************************************************************************
+# **********************************************************************************************
 
-# ********************* Train & Test **************************************************
+# ********************* Train & Test ***********************************************************
 #separates data into train and test
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
-# *************************************************************************************
+# **********************************************************************************************
 
-# ********************* Preprocessing *************************************************
+# ********************* Preprocessing **********************************************************
 preprocessing_data = pd.DataFrame(StandardScaler().fit(df).transform(df))
-# *************************************************************************************
+# **********************************************************************************************
 
-# ********************* Feature Extraction ********************************************
+# ********************* Feature Extraction *****************************************************
 def getfeature(data):
     fmean=np.mean(data)
     fstd=np.std(data)
@@ -92,32 +92,21 @@ notfaulttest = extractFeature(preprocessing_data,250,10,"0")
 faulttest = extractFeature(preprocessing_data,250,10,"1")
 
 merged_test = pd.concat([notfaulttest, faulttest])
-# *************************************************************************************
+# **********************************************************************************************
 
-# ************************ Classification Algorithms **********************************
+# ************************ Classification Algorithms (STEP 3) **********************************
 classifier_dt = DecisionTreeClassifier()
 classifier_knn = KNeighborsClassifier(n_neighbors=5, metric='minkowski', p=2 )
 classifier_lr = LogisticRegression(random_state = 0)
 classifier_nb = GaussianNB()  
 classifier_rf = RandomForestClassifier(n_estimators=10, criterion='entropy', random_state=0) 
 classifier_ab = AdaBoostClassifier(n_estimators=50, learning_rate=1)
-classifier_sv = SVC(kernel='linear', random_state = 0)
+classifier_sv = SVC()
 classifier_mlp = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
 
 def classificationAlgorithms(cls_name, cls_model, X_train, X_test, y_train, y_test):
     model = cls_model
     model.fit(X_train, y_train)
-    
-    results = []
-    names= []
-    
-    names.append(cls_name)
-     
-    # kfold
-    score = cross_val_score(cls_model, X, y, cv=10)
-    
-    # kfold array
-    results.append(score)
     
     y_pred = model.predict(X_test)
 
@@ -125,13 +114,8 @@ def classificationAlgorithms(cls_name, cls_model, X_train, X_test, y_train, y_te
     print(cls_name, 'accuracy score', accuracy_score(y_true = y_train, y_pred = model.predict(X_train)))
     print('Confusion Matrix:')
     print(confusion_matrix(y_test, y_pred), '\n')
-    print(score)
-    print(score.mean())
     
-    ax = sns.boxplot(data = results)
-    ax.set_xticklabels(names)
-    plt.show()
-    
+
 classificationAlgorithms('Decision Tree Algorithm', classifier_dt, X_train, X_test, y_train, y_test)
 classificationAlgorithms('KNN Algorithm', classifier_knn, X_train, X_test, y_train, y_test)
 classificationAlgorithms('Logistic Regression Algorithm', classifier_lr, X_train, X_test, y_train, y_test)
@@ -140,7 +124,54 @@ classificationAlgorithms('Random Forest Algorithm', classifier_rf, X_train, X_te
 classificationAlgorithms('AdaBoost Algorithm', classifier_ab, X_train, X_test, y_train, y_test)
 classificationAlgorithms('SVC Algorithm', classifier_sv, X_train, X_test, y_train, y_test)
 classificationAlgorithms('MLP Algorithm', classifier_mlp, X_train, X_test, y_train, y_test)
-# *************************************************************************************
+# **************************************************************************************
+
+# ************************ K-FOLD & BOXPLOTS (STEP 4) **********************************
+models = []
+
+models.append(classifier_dt)
+models.append(classifier_knn)
+models.append(classifier_lr)
+models.append(classifier_nb)
+models.append(classifier_rf)
+models.append(classifier_ab)
+models.append(classifier_sv)
+models.append(classifier_mlp)
+
+names = []
+
+names.append('DT')
+names.append('KNN')
+names.append('LR')
+names.append('NB')
+names.append('RF')
+names.append('AB')
+names.append('SVC')
+names.append('MLP')
+
+
+results = []
+
+for model in models:
+    score = cross_val_score(model, X_train, y_train, cv=10)
+    results.append(score)
+    
+puan = []
+
+for i in range(len(names)):
+    puan.append(results[i].mean())
+print("Highest accuracy value:")
+print(names[puan.index(max(puan))], max(puan))  
+
+
+ax = sns.boxplot(data = results)
+ax.set_xticklabels(names)
+plt.show()
+# ***************************************************************************************
+
+
+
+
  #MADDE-5
 #https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
 # https://scikit-learn.org/stable/auto_examples/model_selection/plot_grid_search_digits.html
