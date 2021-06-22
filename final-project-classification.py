@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jun  1 19:19:07 2021
-
-@author: Acer
-"""
-
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -16,7 +9,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import confusion_matrix  
 from sklearn.metrics import accuracy_score 
 from sklearn.neighbors import KNeighborsClassifier 
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression 
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import AdaBoostClassifier
@@ -167,41 +160,90 @@ print(names[puan.index(max(puan))], max(puan))
 ax = sns.boxplot(data = results)
 ax.set_xticklabels(names)
 plt.show()
-# ***************************************************************************************
+#****************************************************************************************
 
-
-
-
- #MADDE-5
-#https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
-# https://scikit-learn.org/stable/auto_examples/model_selection/plot_grid_search_digits.html
-#
+#***************************HYPERPARAMETERES (STEP 5)************************************
+def dicbar(title, dic):
+    keys = dic.keys()
+    values = dic.values()
+    plt.xticks(rotation=90)
+    plt.title(title)
+    plt.bar(keys, values)
+    plt.show()
+    
+DecisionTreeClassifierHP = {
+    "criterion": ["gini", "entropy"],
+    "splitter": ["best", "random"],
+    "max_depth": [1, 2, 3, 4, 5, 6],
+    "min_samples_split": [3, 4, 5, 6, 7, 8, 9],
+    "min_samples_leaf": [1, 2, 3, 4, 5, 6],
+    "max_features": ["auto", "sqrt", "log2", None]
+}
 from sklearn.model_selection import GridSearchCV
+from sklearn.svm import SVC
+
+# Create the parameters list we wish to tune.
+parameters = DecisionTreeClassifierHP
+
+
+# Perform grid search on the classifier using 'scores' as the scoring method.
+# Create the object.
+grid_obj = GridSearchCV(classifier_dt, parameters, cv=20, scoring = 'accuracy')
+
+# Fit the grid search object to the training data and find the optimal parameters.
+grid_fit = grid_obj.fit(X_train, y_train)
+
+# Get the estimator.
+best_clf = grid_fit.best_estimator_
+
+# Fit the new model.
+best_clf.fit(X_train, y_train)
+
+# Make predictions using the new model.
+best_train_predictions = best_clf.predict(X_train)
+best_test_predictions = best_clf.predict(X_test)
+
+# Plot the new model.
+#plot_model(X, y, best_clf)
+
+# Let's also explore what parameters ended up being used in the new model.
+best_clf
+
+grid_fit.best_score_
+
+hyperparameters = {}
+for i in range(len(grid_fit.cv_results_["mean_test_score"])):
+    hyperparameters[str(grid_fit.cv_results_["params"][i])] = grid_fit.cv_results_["mean_test_score"][i]
+    #print(str(grid_fit.cv_results_["params"][i]) +": "+ str(grid_fit.cv_results_["mean_test_score"][i]))
+    
+keys = hyperparameters.keys()
+values = hyperparameters.values()
+plt.xticks(rotation=90)
+plt.bar(keys,values)
+plt.show()
+
+hyperparameters = sorted(hyperparameters.items(), key=lambda x: -x[1])
+
 from sklearn.metrics import classification_report
 
-
-#Decision Tree Parametreleri için(link = https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html)
-parameters = {'criterion':('gini', 'entropy'), 'splitter':('best', 'random'), 'max_depth':[1,10]}
 scores = ['precision', 'recall']
 
 for score in scores:
     print("# Tuning hyper-parameters for %s" % score)
-    print()
 
-    clf = GridSearchCV(DecisionTreeClassifier(), parameters, scoring='%s_macro' % score)
-    clf.fit(X_train, y_train)
+    classifier_dt = GridSearchCV(DecisionTreeClassifier(), parameters, scoring='%s_macro' % score)
+    classifier_dt.fit(X_train, y_train)
 
     print("Best parameters set found on development set:")
     print()
-    print(clf.best_params_)
+    print(classifier_dt.best_params_)
     print()
     print("Grid scores on development set:")
     print()
-    means = clf.cv_results_['mean_test_score']
-    stds = clf.cv_results_['std_test_score']
-    for mean, std, params in zip(means, stds, clf.cv_results_['params']):
-        print("%0.3f (+/-%0.03f) for %r"
-              % (mean, std * 2, params))
+    means = classifier_dt.cv_results_['mean_test_score']
+    stds = classifier_dt.cv_results_['std_test_score']
+    for mean, std, params in zip(means, stds, classifier_dt.cv_results_['params']):
+        print("%0.3f (+/-%0.03f) for %r" % (mean, std * 2, params))
     print()
 
     print("Detailed classification report:")
@@ -209,7 +251,57 @@ for score in scores:
     print("The model is trained on the full development set.")
     print("The scores are computed on the full evaluation set.")
     print()
-    y_true, y_pred = y_test, clf.predict(X_test)
+    y_true, y_pred = y_test, classifier_dt.predict(X_test)
     print(classification_report(y_true, y_pred))
-    print()
+    
+    print('Best Score: %s' % classifier_dt.best_score_)
+    print('Best Hyperparameters: %s' % classifier_dt.best_params_)
+
+    predictions = classifier_dt.predict(X_test)
+    
+    conf = confusion_matrix(y_test, predictions)
+    plt.figure()
+    sns.heatmap(conf, annot=True)
+    plt.xlabel("True Label")
+    plt.ylabel("Prediction Label")
+
+#******************************************************************************
+
+#*********************QUESTION 6 **********************************************
+import operator
+
+sortedHP  = {}
+sortedHP = sorted(hyperparameters.items(),key = operator.itemgetter(1),reverse=True)
+print(sortedHP)
+
+dictHP = {}
+for hyperparameters in sortedHP[0:3]:
+    dictHP[hyperparameters[0]] = hyperparameters[1]
+    print(hyperparameters[1])
+    
+plt.xsticks(rotation=90)
+plt.hist(dictHP)
+
+#******************************************************************************
+
+#***********************QUESTION 7*********************************************
+
+predictions = []
+predictions.append(classifier_dt.predict([[12, 0]])[0])
+predictions.append(classifier_dt.predict([[1, 1]])[0])
+predictions.append(classifier_dt.predict([[5, 2]])[0])
+
+#plot draw
+plt.bar(np.arange(len(predictions)), predictions)
+
+
+
+
+
+
+
+
+
+
+
 
