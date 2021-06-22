@@ -15,10 +15,11 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
+import operator
 
 
 # ********************* Read Data **************************************************************
-df = pd.read_excel('C:/Users/Acer/Desktop/metadata_train.xlsx', header = None)
+df = pd.read_excel('C:/Users/Acer/Desktop/yapay final/metadata_train.xlsx', header = None)
 df.drop([0], axis = 0, inplace = True)
 
 X = df.iloc[:,:-1].values
@@ -30,11 +31,11 @@ y = df[3].values.astype('int')
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 # **********************************************************************************************
 
-# ********************* Preprocessing **********************************************************
+# ********************* Preprocessing (QUESTION 2) *********************************************
 preprocessing_data = pd.DataFrame(StandardScaler().fit(df).transform(df))
 # **********************************************************************************************
 
-# ********************* Feature Extraction *****************************************************
+# ********************* Feature Extraction (QUESTION 2) ****************************************
 def getfeature(data):
     fmean=np.mean(data)
     fstd=np.std(data)
@@ -73,21 +74,15 @@ def extractFeature(raw_data,ws,hop,dfname):
     })
     return rdf
 # not fault train
-notfaulttrain = extractFeature(preprocessing_data,250,10,"0")
+notfault = extractFeature(preprocessing_data,250,10,"0")
 # fault train
-faulttrain = extractFeature(preprocessing_data,250,10,"1")
+fault = extractFeature(preprocessing_data,250,10,"1")
 
-merged_train = pd.concat([notfaulttrain, faulttrain])
+merged = pd.concat([notfault, fault])
+# **************************************************************************************
 
-# not fault test
-notfaulttest = extractFeature(preprocessing_data,250,10,"0")
-# fault test
-faulttest = extractFeature(preprocessing_data,250,10,"1")
 
-merged_test = pd.concat([notfaulttest, faulttest])
-# **********************************************************************************************
-
-# ************************ Classification Algorithms (STEP 3) **********************************
+# ************************ Classification Algorithms (QUESTION 3) **********************
 classifier_dt = DecisionTreeClassifier()
 classifier_knn = KNeighborsClassifier(n_neighbors=5, metric='minkowski', p=2 )
 classifier_lr = LogisticRegression(random_state = 0)
@@ -119,7 +114,7 @@ classificationAlgorithms('SVC Algorithm', classifier_sv, X_train, X_test, y_trai
 classificationAlgorithms('MLP Algorithm', classifier_mlp, X_train, X_test, y_train, y_test)
 # **************************************************************************************
 
-# ************************ K-FOLD & BOXPLOTS (STEP 4) **********************************
+# ************************ K-FOLD & BOXPLOTS (QUESTION 4) ******************************
 models = []
 
 models.append(classifier_dt)
@@ -162,7 +157,7 @@ ax.set_xticklabels(names)
 plt.show()
 #****************************************************************************************
 
-#***************************HYPERPARAMETERES (STEP 5)************************************
+#***************************HYPERPARAMETERES (QUESTION 5)********************************
 def dicbar(title, dic):
     keys = dic.keys()
     values = dic.values()
@@ -264,12 +259,9 @@ for score in scores:
     sns.heatmap(conf, annot=True)
     plt.xlabel("True Label")
     plt.ylabel("Prediction Label")
+#****************************************************************************************
 
-#******************************************************************************
-
-#*********************QUESTION 6 **********************************************
-import operator
-
+#********************* HYper-Parameter (QUESTION 6) *************************************
 sortedHP  = {}
 sortedHP = sorted(hyperparameters.items(),key = operator.itemgetter(1),reverse=True)
 print(sortedHP)
@@ -282,10 +274,9 @@ for hyperparameters in sortedHP[0:3]:
 plt.xsticks(rotation=90)
 plt.hist(dictHP)
 
-#******************************************************************************
+#****************************************************************************************
 
-#***********************QUESTION 7*********************************************
-
+#*********************** Plot Predictions (QUESTION 7) **********************************
 predictions = []
 predictions.append(classifier_dt.predict([[12, 0]])[0])
 predictions.append(classifier_dt.predict([[1, 1]])[0])
@@ -293,6 +284,7 @@ predictions.append(classifier_dt.predict([[5, 2]])[0])
 
 #plot draw
 plt.bar(np.arange(len(predictions)), predictions)
+#****************************************************************************************
 
 
 
